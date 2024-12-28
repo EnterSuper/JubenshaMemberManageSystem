@@ -47,14 +47,14 @@
       </div>
       <div>
         <el-table :data="schedule" style="width: 100%">
-          <el-table-column label="时间" prop="time"  width="180"></el-table-column>
-          <el-table-column label="星期一" prop="monday"  width="180"></el-table-column>
-          <el-table-column label="星期二" prop="tuesday"  width="180"></el-table-column>
-          <el-table-column label="星期三" prop="wednesday"  width="180"></el-table-column>
-          <el-table-column label="星期四" prop="thursday"  width="180"></el-table-column>
-          <el-table-column label="星期五" prop="friday"  width="180"></el-table-column>
-          <el-table-column label="星期六" prop="saturday"  width="180"></el-table-column>
-          <el-table-column label="星期日" prop="sunday"  width="180"></el-table-column>
+          <el-table-column label="时间" prop="time"  width="130"></el-table-column>
+          <el-table-column label="星期一" prop="monday"  width="130"></el-table-column>
+          <el-table-column label="星期二" prop="tuesday"  width="130"></el-table-column>
+          <el-table-column label="星期三" prop="wednesday"  width="130"></el-table-column>
+          <el-table-column label="星期四" prop="thursday"  width="130"></el-table-column>
+          <el-table-column label="星期五" prop="friday"  width="130"></el-table-column>
+          <el-table-column label="星期六" prop="saturday"  width="130"></el-table-column>
+          <el-table-column label="星期日" prop="sunday"  width="130"></el-table-column>
           <!-- ... -->
         </el-table>
       </div>
@@ -94,4 +94,7 @@ export default {
 </script>
 
 <style scoped>
+.el-table .cell {
+  padding: 15px 5px; /* 这将使行距为 30px，列距为 10px */
+}
 </style>

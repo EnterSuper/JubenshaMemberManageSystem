@@ -32,7 +32,7 @@ request.interceptors.response.use(
             res = res ? JSON.parse(res) : res
         }
         if (res.code === '401') {
-            router.push({path: '/login'})
+            router.push({path: '/login'})  // 跳转到登录页面
         }
         return res;
     },

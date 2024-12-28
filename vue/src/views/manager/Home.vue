@@ -30,10 +30,10 @@
       <div class="card-container">
         <el-card class="custom-card">
           <div slot="header" class="card-header">
-            <span>好好学习，天天向上</span>
+            <span>欢迎来到教务系统</span>
           </div>
           <div class="card-content">
-            学习是一种信仰
+            这是教务系统
           </div>
         </el-card>
       </div>
