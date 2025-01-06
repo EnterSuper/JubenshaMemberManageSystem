@@ -53,9 +53,14 @@ const memberRoutes = [
     meta: { requiresAuth: true, role: 'member' },
     children: [
       {
+        path: '',
+        redirect: 'home'
+      },
+      {
         path: 'home',
         name: 'MemberHome',
-        component: () => import('@/views/member/Home')
+        component: () => import('@/views/member/Home'),
+        meta: { title: '会员首页' }
       },
       {
         path: 'balance',
@@ -123,7 +128,8 @@ router.beforeEach((to, from, next) => {
   
   // 如果已登录且访问登录页，重定向到对应的首页
   if (to.path === '/login' && user.token) {
-    next(user.role === 'admin' ? '/admin/home' : '/member/home')
+    // 管理员进入后台首页，会员进入根路径
+    next(user.role === 'admin' ? '/admin/home' : '/')
     return
   }
   

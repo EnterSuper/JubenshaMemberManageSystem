@@ -94,10 +94,13 @@ export default {
           this.$request.post('/login', loginData).then(res => {
             if (res.code === '200') {
               const userData = res.data
-              localStorage.setItem("honey-user", JSON.stringify(userData))
+              localStorage.setItem("honey-user", JSON.stringify({
+                ...userData,
+                token: userData.token || userData.id
+              }))
               
               // 根据用户角色和登录类型决定重定向路径
-              const redirectPath = userData.role === 'admin' ? '/admin/home' : '/member/home'
+              const redirectPath = userData.role === 'admin' ? '/admin/home' : '/'
               
               // 检查是否有重定向参数
               const redirect = this.$route.query.redirect
