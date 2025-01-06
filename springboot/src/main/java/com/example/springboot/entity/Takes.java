@@ -6,29 +6,32 @@
 
 package com.example.springboot.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.*;
+import lombok.Data;
 
-@Data  // 通过该注解，可以省略getter和setter方法和构造方法和builder方法
-@TableName("takes")  // 通过该注解，可以指定表名
+@Data
+@TableName("takes")
 public class Takes {
-    Integer id;
-    String year;
-    String semester;
-    Integer start_week;
-    Integer end_week;
-    Integer course_id;
-    String title;
-    Float credits;
-    String type;
-    Integer grade;
-    String time;
-    String Monday;
-    String Tuesday;
-    String Wednesday;
-    String Thursday;
-    String Friday;
-    String Saturday;
-    String Sunday;
-    Integer time_id;
+    @TableId(type = IdType.AUTO)
+    private Integer id;
+    private String year;
+    private String semester;
+    private Integer start_week;
+    private Integer end_week;
+    private Integer course_id;
+    private String title;
+    private Float credits;
+    private String type;
+    private Integer grade;
+    private String time;
+    private String Monday;
+    private String Tuesday;
+    private String Wednesday;
+    private String Thursday;
+    private String Friday;
+    private String Saturday;
+    private String Sunday;
+    private Integer time_id;
 }

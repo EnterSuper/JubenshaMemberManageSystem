@@ -1,56 +1,153 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
+import Layout from '@/views/Layout'
+import MemberLayout from '@/views/member/MemberLayout'
+import AdminLayout from '@/views/admin/AdminLayout'
 
 Vue.use(VueRouter)
 
-const routes = [
+// 公共路由
+const publicRoutes = [
   {
     path: '/',
-    name: 'Manager',
-    component: () => import('../views/Manager.vue'),
-    redirect: '/home',  // 重定向到主页
+    component: Layout,
     children: [
-      { path: 'home', name: 'Home', component: () => import('@/views/manager/Home')},
-      { path: 'user', name: 'User', component: () => import('@/views/manager/User')},
-      { path: '403', name: 'Auth', component: () => import('@/views/manager/Auth')},
-      { path: 'class', name: 'class', component: () => import('@/views/manager/class')},
-      { path: 'grade', name: 'grade', component: () => import('@/views/manager/grade')},
-      { path: 'person', name: 'Person', component: () => import('@/views/manager/Person')},
-      { path: 'password', name: 'Password', component: () => import('@/views/manager/Password')}
+      {
+        path: '',
+        name: 'Home',
+        component: () => import('@/views/public/Home')
+      },
+      {
+        path: 'home',
+        redirect: '/'
+      },
+      {
+        path: 'scripts',
+        name: 'Scripts',
+        component: () => import('@/views/public/Scripts')
+      },
+      {
+        path: 'contact',
+        name: 'Contact',
+        component: () => import('@/views/public/Contact')
+      },
+      {
+        path: 'login',
+        name: 'Login',
+        component: () => import('@/views/Login')
+      },
+      {
+        path: 'register',
+        name: 'Register',
+        component: () => import('@/views/Register')
+      }
     ]
-  },
+  }
+]
+
+// 会员路由
+const memberRoutes = [
   {
-    path: '/element',
-    name: 'Element',
-    component: () => import('../views/Element.vue')
-  },
-  {path: '/login', name: 'Login', component: () => import('../views/Login.vue')},
-  {path: '/register', name: 'Register', component: () => import('../views/Register.vue')}
+    path: '/member',
+    component: MemberLayout,
+    meta: { requiresAuth: true, role: 'member' },
+    children: [
+      {
+        path: 'home',
+        name: 'MemberHome',
+        component: () => import('@/views/member/Home')
+      },
+      {
+        path: 'balance',
+        name: 'Balance',
+        component: () => import('@/views/member/Balance')
+      },
+      {
+        path: 'history',
+        name: 'PlayHistory',
+        component: () => import('@/views/member/PlayHistory')
+      },
+      {
+        path: 'profile',
+        name: 'Profile',
+        component: () => import('@/views/member/Profile')
+      }
+    ]
+  }
+]
+
+// 管理员路由
+const adminRoutes = [
+  {
+    path: '/admin',
+    component: AdminLayout,
+    meta: { requiresAuth: true, role: 'admin' },
+    children: [
+      {
+        path: 'home',
+        name: 'AdminHome',
+        component: () => import('@/views/admin/Home')
+      },
+      {
+        path: 'members',
+        name: 'MemberManagement',
+        component: () => import('@/views/admin/MemberManagement')
+      },
+      {
+        path: 'scripts',
+        name: 'ScriptManagement',
+        component: () => import('@/views/admin/ScriptManagement')
+      },
+      {
+        path: 'announcements',
+        name: 'AnnouncementManagement',
+        component: () => import('@/views/admin/AnnouncementManagement')
+      },
+      {
+        path: 'profile',
+        name: 'AdminProfile',
+        component: () => import('@/views/member/Profile'),
+        meta: { title: '个人设置' }
+      }
+    ]
+  }
 ]
 
 const router = new VueRouter({
-  mode: 'history',
-  base: process.env.BASE_URL,
-  routes
+  routes: [...publicRoutes, ...memberRoutes, ...adminRoutes]
 })
-router.beforeEach((to, from, next) => {
-  // to 是到达的路由信息
-  // from 是开源的路由信息
-  // next 是帮助我们跳转路由的函数
-  let adminPaths = ['/user']
-  let user = JSON.parse(localStorage.getItem('honey-user') || '{}')
 
-  if (user.role !== '管理员' && adminPaths.includes(to.path)) {
-    // 如果当前登录的用户不是管理员，然后当前的到达的路径是管理员才有权限访问的路径，那这个时候我就让用户去到一个没有权限的页面，不让他访问实际的页面
-    next('/403')
+// 路由守卫
+router.beforeEach((to, from, next) => {
+  const user = JSON.parse(localStorage.getItem('honey-user') || '{}')
+  
+  // 如果已登录且访问登录页，重定向到对应的首页
+  if (to.path === '/login' && user.token) {
+    next(user.role === 'admin' ? '/admin/home' : '/member/home')
+    return
+  }
+  
+  // 检查是否需要认证
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    if (!user.token) {
+      next({
+        path: '/login',
+        query: { redirect: to.fullPath }
+      })
+    } else {
+      const hasPermission = to.matched.every(record => {
+        return !record.meta.role || record.meta.role === user.role
+      })
+      
+      if (hasPermission) {
+        next()
+      } else {
+        next('/')
+      }
+    }
   } else {
     next()
   }
 })
-// 解决导航栏或者底部导航tabBar中的vue-router在3.0版本以上频繁点击菜单报错的问题。
-const originalPush = VueRouter.prototype.push
-VueRouter.prototype.push = function push (location) {
-  return originalPush.call(this, location).catch(err => err)
-}
 
 export default router
