@@ -4,7 +4,7 @@
       <div class="form-title">{{ isAdmin ? '管理员登录' : '会员登录' }}</div>
       <el-form :model="user" :rules="rules" ref="loginRef">
         <el-form-item prop="username">
-          <el-input v-model="user.username" :placeholder="isAdmin ? '请输入用户名' : '请输入手机号'" prefix-icon="el-icon-user">
+          <el-input v-model="user.username" :placeholder="isAdmin ? '请输入用户名' : '请输入用户名/手机号'" prefix-icon="el-icon-user">
           </el-input>
         </el-form-item>
         <el-form-item prop="password">
@@ -28,7 +28,10 @@
           <el-link type="primary" @click="isAdmin = !isAdmin">
             {{ isAdmin ? '会员登录' : '管理员登录' }}
           </el-link>
-          <el-link v-if="!isAdmin" type="primary" @click="$router.push('/register')">注册账号</el-link>
+          <div>
+            <el-link v-if="!isAdmin" type="primary" @click="$router.push('/register')" style="margin-right: 15px">注册账号</el-link>
+            <el-link type="primary" @click="$router.push('/forgot-password')">忘记密码？</el-link>
+          </div>
         </div>
       </el-form>
     </div>
@@ -45,8 +48,8 @@ export default {
     const validateUsername = (rule, value, callback) => {
       if (value === '') {
         callback(new Error('请输入账号'))
-      } else if (!this.isAdmin && !/^1[3-9]\d{9}$/.test(value)) {
-        callback(new Error('请输入正确的手机号'))
+      } else if (!this.isAdmin && !(/^1[3-9]\d{9}$/.test(value) || /^[a-zA-Z0-9_]{2,10}$/.test(value))) {
+        callback(new Error('请输入正确的用户名或手机号'))
       } else {
         callback()
       }
@@ -81,22 +84,24 @@ export default {
       this.user.code = ''
     },
     login() {
-      this.$refs['loginRef'].validate((valid) => {
+      this.$refs['loginRef'].validate(async (valid) => {
         if (valid) {
           const loginData = {
             username: this.user.username,
             password: this.user.password,
             code: this.user.code,
-            loginType: this.isAdmin ? 'admin' : 'member'
+            loginType: this.isAdmin ? 'admin' : 'member',
+            accountType: this.isAdmin ? 'username' : (/^1[3-9]\d{9}$/.test(this.user.username) ? 'phone' : 'username')
           }
-          console.log('发送登录请求的数据:', loginData)
           
-          this.$request.post('/login', loginData).then(res => {
+          try {
+            const res = await this.$request.post('/login', loginData)
             if (res.code === '200') {
               const userData = res.data
               localStorage.setItem("honey-user", JSON.stringify({
                 ...userData,
-                token: userData.token || userData.id
+                token: userData.token || userData.id,
+                loginTime: new Date().getTime()
               }))
               
               // 根据用户角色和登录类型决定重定向路径
@@ -107,12 +112,17 @@ export default {
               this.$router.replace(redirect || redirectPath)
               
               this.$message.success('登录成功')
-            } else {
-              this.$message.error(res.msg)
-              this.$refs.validCode.refreshCode()
-              this.user.code = ''
             }
-          })
+          } catch (error) {
+            // 只有在非预期错误时才记录错误
+            if (!error.message?.includes('用户名或密码错误')) {
+              console.error('登录异常:', error)
+            }
+          } finally {
+            // 无论成功还是失败，都刷新验证码
+            this.$refs.validCode.refreshCode()
+            this.user.code = ''
+          }
         }
       })
     }

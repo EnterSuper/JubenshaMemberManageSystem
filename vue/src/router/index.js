@@ -40,6 +40,11 @@ const publicRoutes = [
         path: 'register',
         name: 'Register',
         component: () => import('@/views/Register')
+      },
+      {
+        path: 'forgot-password',
+        name: 'ForgotPassword',
+        component: () => import('@/views/ForgotPassword')
       }
     ]
   }

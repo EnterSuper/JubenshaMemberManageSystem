@@ -15,6 +15,21 @@
         <el-form-item prop="phone" class="form-item">
           <el-input prefix-icon="el-icon-mobile-phone" size="medium" v-model="user.phone" placeholder="请输入手机号"></el-input>
         </el-form-item>
+        <el-form-item prop="email" class="form-item">
+          <el-input prefix-icon="el-icon-message" size="medium" v-model="user.email" placeholder="请输入邮箱"></el-input>
+        </el-form-item>
+        <el-form-item prop="emailCode" class="form-item">
+          <div class="verify-code">
+            <el-input prefix-icon="el-icon-circle-check" size="medium" v-model="user.emailCode" placeholder="请输入邮箱验证码" style="flex: 1;"></el-input>
+            <el-button 
+              type="primary" 
+              :disabled="!!timer || !user.email" 
+              @click="sendEmailCode" 
+              style="margin-left: 10px; width: 120px">
+              {{ timer ? `${countdown}s后重试` : '发送验证码' }}
+            </el-button>
+          </div>
+        </el-form-item>
 
         <el-form-item class="form-item">
           <el-button type="primary" @click="register" class="register-button">注 册</el-button>
@@ -49,12 +64,26 @@ export default {
         callback()
       }
     }
+    // 验证邮箱
+    const validateEmail = (rule, value, callback) => {
+      if (value === '') {
+        callback(new Error('请输入邮箱'))
+      } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
+        callback(new Error('请输入正确的邮箱格式'))
+      } else {
+        callback()
+      }
+    }
     return {
+      timer: null,
+      countdown: 60,
       user: {
         username: '',
         password: '',
         confirmPass: '',
-        phone: ''
+        phone: '',
+        email: '',
+        emailCode: ''
       },
       rules: {
         username: [
@@ -66,25 +95,72 @@ export default {
           { min: 6, message: '密码长度不能小于6位', trigger: 'blur' }
         ],
         confirmPass: [{ validator: validatePassword, trigger: 'blur' }],
-        phone: [{ validator: validatePhone, trigger: 'blur' }]
+        phone: [{ validator: validatePhone, trigger: 'blur' }],
+        email: [{ validator: validateEmail, trigger: 'blur' }],
+        emailCode: [
+          { required: true, message: '请输入邮箱验证码', trigger: 'blur' },
+          { len: 6, message: '验证码长度应为6位', trigger: 'blur' }
+        ]
       }
     }
   },
   methods: {
+    // 发送邮箱验证码
+    async sendEmailCode() {
+      try {
+        // 先验证邮箱格式
+        await this.$refs.registerRef.validateField('email')
+        
+        const res = await this.$request.post('/sendEmailCode', {
+          email: this.user.email
+        })
+        
+        if (res.code === '200') {
+          this.$message.success('验证码已发送，请查收邮件')
+          // 开始倒计时
+          this.countdown = 60
+          this.timer = setInterval(() => {
+            if (this.countdown > 0) {
+              this.countdown--
+            } else {
+              clearInterval(this.timer)
+              this.timer = null
+            }
+          }, 1000)
+        }
+      } catch (error) {
+        console.debug('发送验证码失败')
+      }
+    },
+    
     register() {
-      this.$refs['registerRef'].validate((valid) => {
+      this.$refs['registerRef'].validate(async (valid) => {
         if (valid) {
-          const { username, password, phone } = this.user
-          this.$request.post('/register', { username, password, phone }).then(res => {
+          const { username, password, phone, email, emailCode } = this.user
+          try {
+            const res = await this.$request.post('/register', { 
+              username, 
+              password, 
+              phone,
+              email,
+              emailCode
+            })
             if (res.code === '200') {
               this.$message.success('注册成功')
               this.$router.push('/login')
-            } else {
-              this.$message.error(res.msg)
             }
-          })
+          } catch (error) {
+            console.debug('注册请求完成')
+          }
         }
       })
+    }
+  },
+  beforeDestroy() {
+    // 组件销毁前清除定时器
+    if (this.timer) {
+      clearInterval(this.timer)
+      this.timer = null
     }
   }
 }
@@ -127,5 +203,10 @@ export default {
   text-align: center;
   margin-top: 10px;
   color: #606266;
+}
+
+.verify-code {
+  display: flex;
+  align-items: center;
 }
 </style>

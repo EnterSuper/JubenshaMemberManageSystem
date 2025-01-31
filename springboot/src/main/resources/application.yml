@@ -12,11 +12,9 @@ spring:
     url: jdbc:mysql://localhost:3306/honey2024?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false&serverTimezone=GMT%2b8&allowPublicKeyRetrieval=true
     username: root
     password: pjk520
-    initialization-mode: always
-    schema: classpath:db/schema.sql
   sql:
     init:
-      mode: always
+      mode: never
       schema-locations: classpath:db/schema.sql
       encoding: UTF-8
   servlet:
@@ -27,8 +25,27 @@ spring:
     resources:
       static-locations: classpath:/static/
   mvc:
-    static-path-pattern: /**
+    static-path-pattern: /static/**
+  mail:
+    host: smtp.gmail.com
+    port: 465
+    username: "6luchezhan@gmail.com"
+    password: "izhq jbmw afie edxx"
+    protocol: smtps
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          socketFactory:
+            port: 465
+            class: javax.net.ssl.SSLSocketFactory
+          timeout: 25000
+          connectiontimeout: 25000
+          writetimeout: 25000
 
 file: 
   upload-path: springboot/src/main/resources/static/uploads/
-  access-path: /uploads/
+  access-path: /static/uploads/

@@ -25,6 +25,9 @@ public class UserService extends ServiceImpl<UserMapper, User> {
     @Resource
     UserMapper userMapper;
 
+    @Resource
+    private EmailService emailService;
+
     public User selectByUsername(String username) {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("username", username);  //  eq => ==   where username = #{username}
@@ -67,16 +70,24 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         System.out.println("Username: " + dbUser.getUsername());
         System.out.println("Phone: " + dbUser.getPhone());
         System.out.println("Role: " + dbUser.getRole());
+        System.out.println("Stored Password: " + dbUser.getPassword());
+        
+        // 验证用户角色
+        String loginType = user.getLoginType();
+        if (loginType != null && !loginType.equals(dbUser.getRole())) {
+            System.out.println("Role mismatch! User role: " + dbUser.getRole() + ", Login type: " + loginType);
+            throw new ServiceException("用户名或密码错误");
+        }
         
         // 验证密码
         String rawPassword = user.getPassword();
         String encodedInputPassword = PasswordEncoder.encode(rawPassword);
         String dbPassword = dbUser.getPassword();
         
-        System.out.println("Password verification:");
-        System.out.println("Raw password: " + rawPassword);
-        System.out.println("Encoded input password: " + encodedInputPassword);
-        System.out.println("Database password: " + dbPassword);
+        System.out.println("Password verification details:");
+        System.out.println("1. Raw password from user input: " + rawPassword);
+        System.out.println("2. Encoded password from user input: " + encodedInputPassword);
+        System.out.println("3. Password stored in database: " + dbPassword);
         
         if (!PasswordEncoder.matches(rawPassword, dbPassword)) {
             System.out.println("Password mismatch!");
@@ -100,6 +111,13 @@ public class UserService extends ServiceImpl<UserMapper, User> {
     }
 
     public User register(User user) {
+        System.out.println("============ Register Debug Info ============");
+        System.out.println("Registration attempt with data:");
+        System.out.println("Username: " + user.getUsername());
+        System.out.println("Phone: " + user.getPhone());
+        System.out.println("Email: " + user.getEmail());
+        System.out.println("Raw Password: " + user.getPassword());
+        
         // 验证用户名是否已存在
         User dbUser = selectByUsername(user.getUsername());
         if (dbUser != null) {
@@ -107,11 +125,24 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         }
         
         // 验证手机号是否已存在
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("phone", user.getPhone());
-        dbUser = getOne(queryWrapper);
+        QueryWrapper<User> phoneWrapper = new QueryWrapper<>();
+        phoneWrapper.eq("phone", user.getPhone());
+        dbUser = getOne(phoneWrapper);
         if (dbUser != null) {
             throw new ServiceException("手机号已被注册");
+        }
+
+        // 验证邮箱是否已存在
+        QueryWrapper<User> emailWrapper = new QueryWrapper<>();
+        emailWrapper.eq("email", user.getEmail());
+        dbUser = getOne(emailWrapper);
+        if (dbUser != null) {
+            throw new ServiceException("邮箱已被注册");
+        }
+
+        // 验证邮箱验证码
+        if (!emailService.verifyCode(user.getEmail(), user.getEmailCode())) {
+            throw new ServiceException("邮箱验证码错误或已过期");
         }
 
         // 设置默认值
@@ -120,14 +151,27 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         user.setBalance(new BigDecimal("0"));
         user.setCreateTime(new Date());
         user.setUpdateTime(new Date());
+        
         // 加密密码
-        user.setPassword(PasswordEncoder.encode(user.getPassword()));
+        String rawPassword = user.getPassword();
+        String encodedPassword = PasswordEncoder.encode(rawPassword);
+        System.out.println("Password encryption:");
+        System.out.println("Raw password: " + rawPassword);
+        System.out.println("Encoded password: " + encodedPassword);
+        user.setPassword(encodedPassword);
         
         save(user);
+        System.out.println("User registered successfully");
+        System.out.println("=========================================");
         return user;
     }
 
     public void resetPassword(User user) {
+        System.out.println("============ Reset Password Debug Info ============");
+        System.out.println("Reset password attempt for:");
+        System.out.println("Username: " + user.getUsername());
+        System.out.println("Phone: " + user.getPhone());
+        
         User dbUser = selectByUsername(user.getUsername());
         if (dbUser == null) {
             throw new ServiceException("用户不存在");
@@ -137,9 +181,18 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         }
         
         // 重置密码为123456并加密
-        dbUser.setPassword(PasswordEncoder.encode("123456"));
+        String newPassword = "123456";
+        String encodedPassword = PasswordEncoder.encode(newPassword);
+        System.out.println("Password reset:");
+        System.out.println("New password: " + newPassword);
+        System.out.println("Encoded password: " + encodedPassword);
+        
+        dbUser.setPassword(encodedPassword);
         dbUser.setUpdateTime(new Date());
         updateById(dbUser);
+        
+        System.out.println("Password reset successful");
+        System.out.println("=========================================");
     }
 
     public void updateProfile(User user) {

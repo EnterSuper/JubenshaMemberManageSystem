@@ -23,11 +23,14 @@ public class User {
     private String username;
     private String password;
     private String phone;
+    private String email;
     private String avatar;
     private String gender;
     private Date birthday;
     private BigDecimal balance;
     private Integer points;
+    @TableField(exist = false)  // 数据库中不存在此字段
+    private String emailCode;
     private String role;
     private Date createTime;
     private Date updateTime;
